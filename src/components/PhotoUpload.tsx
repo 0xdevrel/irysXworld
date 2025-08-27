@@ -86,6 +86,9 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       });
 
       setUploadProgress(75);
+      
+      // Add a small delay to show the processing state
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -100,6 +103,9 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       console.log("Gateway URL:", result.gatewayUrl);
       console.log("Transaction ID:", result.transactionId);
       console.log("Explorer URL:", result.explorerUrl);
+      
+      // Add a small delay to show completion
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Call the success callback with new response structure
       onUploadSuccess(result.gatewayUrl, result.transactionId, result.explorerUrl);
@@ -174,6 +180,12 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
           <div className="text-center text-xs text-gray-400">
             Max file size: 10MB • Supported: JPG, PNG, GIF
           </div>
+          
+          {/* Helpful note about processing time */}
+          <div className="text-center text-xs text-gray-400 bg-blue-50 p-3 rounded-xl">
+            <p className="font-medium mb-1">📸 Photo Processing Info</p>
+            <p>After upload, photos may take 3-5 seconds to appear in your gallery as Irys processes them on their gateway.</p>
+          </div>
         </div>
       )}
 
@@ -200,15 +212,32 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
 
           {/* Upload Progress */}
           {isUploading && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-black h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
-              <div className="text-center text-sm text-gray-600">
-                Uploading to Irys testnet... {uploadProgress}%
+              <div className="text-center space-y-1">
+                <div className="text-sm text-gray-600">
+                  Uploading to Irys testnet... {uploadProgress}%
+                </div>
+                {uploadProgress < 50 && (
+                  <div className="text-xs text-gray-400">
+                    Preparing file for blockchain storage...
+                  </div>
+                )}
+                {uploadProgress >= 50 && uploadProgress < 100 && (
+                  <div className="text-xs text-gray-400">
+                    Writing to Solana devnet...
+                  </div>
+                )}
+                {uploadProgress === 100 && (
+                  <div className="text-xs text-green-600">
+                    ✓ Upload complete! Processing on Irys gateway...
+                  </div>
+                )}
               </div>
             </div>
           )}
