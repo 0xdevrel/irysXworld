@@ -4,9 +4,10 @@ import { useState, useRef } from "react";
 
 interface PhotoUploadProps {
   onUploadSuccess: (imageUrl: string, transactionId: string, explorerUrl: string) => void;
+  walletAddress?: string;
 }
 
-export const PhotoUpload = ({ onUploadSuccess }: PhotoUploadProps) => {
+export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export const PhotoUpload = ({ onUploadSuccess }: PhotoUploadProps) => {
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('file', selectedImage);
+      formData.append('walletAddress', walletAddress || ''); // Add wallet address to FormData
 
       setUploadProgress(25);
 
@@ -78,6 +80,9 @@ export const PhotoUpload = ({ onUploadSuccess }: PhotoUploadProps) => {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        headers: {
+          'x-wallet-address': walletAddress || ''
+        }
       });
 
       setUploadProgress(75);

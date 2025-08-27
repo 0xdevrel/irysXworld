@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { VerifyButton } from "@/components/VerifyButton";
+import { WalletAuthButton } from "@/components/WalletAuthButton";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { PhotoGallery } from "@/components/PhotoGallery";
 
@@ -13,16 +13,21 @@ interface Photo {
   timestamp: number;
 }
 
+interface User {
+  address: string;
+  username?: string;
+}
+
 export default function Home() {
-  const [isVerified, setIsVerified] = useState(false);
-  const [username, setUsername] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [showUpload, setShowUpload] = useState(false);
 
-  const handleVerificationSuccess = () => {
-    setIsVerified(true);
-    // In a real app, you would get the username from the verification response
-    setUsername("Verified User");
+  const handleAuthSuccess = (userData: User) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+    console.log('User authenticated:', userData);
   };
 
   const handleUploadSuccess = (imageUrl: string, transactionId: string, explorerUrl: string) => {
@@ -53,6 +58,16 @@ export default function Home() {
     window.open(photo.explorerUrl, '_blank');
   };
 
+  const getDisplayName = () => {
+    if (user?.username) {
+      return user.username;
+    }
+    if (user?.address) {
+      return `${user.address.slice(0, 6)}...${user.address.slice(-4)}`;
+    }
+    return "User";
+  };
+
   return (
     <div className="min-h-screen bg-white text-black flex flex-col">
       {/* Header */}
@@ -63,23 +78,23 @@ export default function Home() {
         <h1 className="text-3xl font-bold mb-2">Photobooth</h1>
         <p className="text-gray-600 text-lg mb-8">Onchain photo storage</p>
         
-        {!isVerified ? (
+        {!isAuthenticated ? (
           <div className="space-y-6">
-            <VerifyButton onVerificationSuccess={handleVerificationSuccess} />
+            <WalletAuthButton onAuthSuccess={handleAuthSuccess} />
           </div>
         ) : (
           <div className="space-y-6">
             {/* Welcome Message */}
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold">Welcome, {username}!</h2>
-              <p className="text-gray-600 text-sm">
-                Your photos are ready to upload to Irys testnet.
-              </p>
+              <h2 className="text-xl font-semibold">Welcome, {getDisplayName()}!</h2>
             </div>
 
             {/* Upload Section */}
             {showUpload ? (
-              <PhotoUpload onUploadSuccess={handleUploadSuccess} />
+              <PhotoUpload 
+                onUploadSuccess={handleUploadSuccess} 
+                walletAddress={user?.address}
+              />
             ) : (
               <div className="space-y-4">
                 <button
@@ -101,13 +116,14 @@ export default function Home() {
             {/* Reset Button */}
             <button
               onClick={() => {
-                setIsVerified(false);
+                setIsAuthenticated(false);
+                setUser(null);
                 setPhotos([]);
                 setShowUpload(false);
               }}
               className="w-full bg-gray-100 text-black font-medium py-3 px-6 rounded-2xl hover:bg-gray-200 transition-colors border border-gray-200"
             >
-              Reset
+              Sign Out
             </button>
           </div>
         )}
@@ -115,7 +131,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="px-6 py-4 text-center text-gray-500 text-xs">
-        <p>Powered by World ID & Irys</p>
+        <p>Powered by World App & Irys</p>
       </footer>
     </div>
   );

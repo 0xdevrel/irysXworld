@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import bs58 from "bs58";
 

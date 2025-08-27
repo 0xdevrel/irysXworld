@@ -112,8 +112,15 @@ export async function POST(req: NextRequest) {
         { name: "Application", value: "Photobooth" },
         { name: "Version", value: "1.0" },
         { name: "Timestamp", value: new Date().toISOString() },
-        { name: "Filename", value: file.name }
+        { name: "Filename", value: file.name },
+        { name: "Uploader", value: "World App User" }
       ];
+
+      // Add wallet address if available in headers
+      const walletAddress = req.headers.get('x-wallet-address');
+      if (walletAddress) {
+        tags.push({ name: "Wallet-Address", value: walletAddress });
+      }
 
       console.log('Uploading file to Irys Solana devnet...');
       const receipt = await irysUploader.upload(buffer, { tags });

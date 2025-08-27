@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Photo {
   id: string;
@@ -19,6 +19,21 @@ interface PhotoGalleryProps {
 export const PhotoGallery = ({ photos, onPhotoClick, onTransactionClick }: PhotoGalleryProps) => {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [retryCount, setRetryCount] = useState<Record<string, number>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  // Add delay for newly uploaded images
+  useEffect(() => {
+    photos.forEach((photo) => {
+      if (!imageUrls[photo.id]) {
+        // Add a 2-second delay for new images to allow Irys gateway to process
+        const timer = setTimeout(() => {
+          setImageUrls(prev => ({ ...prev, [photo.id]: photo.url }));
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
+    });
+  }, [photos, imageUrls]);
 
   const handleImageError = (photoId: string) => {
     console.error(`Failed to load image for photo ${photoId}`);
@@ -80,6 +95,7 @@ export const PhotoGallery = ({ photos, onPhotoClick, onTransactionClick }: Photo
                 <div className="text-center">
                   <div className="w-8 h-8 bg-gray-400 rounded-lg mx-auto mb-1"></div>
                   <p className="text-xs text-gray-500">Failed to load</p>
+                  <p className="text-xs text-gray-400 break-all">{photo.url}</p>
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -91,15 +107,31 @@ export const PhotoGallery = ({ photos, onPhotoClick, onTransactionClick }: Photo
                   </button>
                 </div>
               </div>
+            ) : !imageUrls[photo.id] ? (
+              // Loading state while waiting for Irys gateway
+              <div className="w-full h-32 bg-gray-100 rounded-xl flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-1"></div>
+                  <p className="text-xs text-gray-500">Processing...</p>
+                </div>
+              </div>
             ) : (
               <img
-                src={photo.url}
+                src={imageUrls[photo.id]}
                 alt="Uploaded photo"
                 className="w-full h-32 object-cover rounded-xl"
-                onError={() => handleImageError(photo.id)}
-                onLoad={() => handleImageLoad(photo.id)}
+                onError={(e) => {
+                  console.error(`Image failed to load for ${photo.id}:`, imageUrls[photo.id]);
+                  console.error('Error event:', e);
+                  handleImageError(photo.id);
+                }}
+                onLoad={() => {
+                  console.log(`Image loaded successfully for ${photo.id}:`, imageUrls[photo.id]);
+                  handleImageLoad(photo.id);
+                }}
                 crossOrigin="anonymous"
                 loading="lazy"
+                referrerPolicy="no-referrer"
               />
             )}
             

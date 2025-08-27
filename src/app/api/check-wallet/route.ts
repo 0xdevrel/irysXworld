@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { Uploader } from "@irys/upload";
 import { Solana } from "@irys/upload-solana";
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
