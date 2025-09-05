@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const userProfile = await getUserPhotos(userAddress);
     
     if (!userProfile) {
+      console.log(`No existing profile found for user ${userAddress} - returning empty gallery`);
       return NextResponse.json({
         success: true,
         photos: [],

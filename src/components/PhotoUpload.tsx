@@ -97,10 +97,6 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       
       setUploadProgress(100);
 
-      console.log("Upload successful:", result);
-      console.log("Gateway URL:", result.gatewayUrl);
-      console.log("Transaction ID:", result.transactionId);
-      console.log("Explorer URL:", result.explorerUrl);
       
       // Save photo to KV storage
       if (walletAddress) {
@@ -124,14 +120,16 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
             body: JSON.stringify(photoData)
           });
 
-          if (saveResponse.ok) {
-            console.log('Photo saved to KV storage successfully');
-          } else {
-            console.error('Failed to save photo to KV storage');
+          if (!saveResponse.ok) {
+            const errorData = await saveResponse.json().catch(() => ({}));
+            console.error('Failed to save photo to KV storage:', errorData);
+            // Show user-friendly error message
+            setError('Photo uploaded successfully, but failed to save to gallery. Please refresh the page.');
           }
         } catch (kvError) {
           console.error('Error saving photo to KV:', kvError);
-          // Don't fail the upload if KV save fails
+          // Show user-friendly error message
+          setError('Photo uploaded successfully, but failed to save to gallery. Please refresh the page.');
         }
       }
       

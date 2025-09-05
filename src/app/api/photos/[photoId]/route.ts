@@ -4,11 +4,11 @@ import { deleteUserPhoto } from "@/lib/kv";
 // DELETE /api/photos/[photoId] - Delete a specific photo
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { photoId: string } }
+  { params }: { params: Promise<{ photoId: string }> }
 ) {
   try {
     const userAddress = req.headers.get('x-user-address');
-    const { photoId } = params;
+    const { photoId } = await params;
     
     if (!userAddress) {
       return NextResponse.json({

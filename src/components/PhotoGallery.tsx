@@ -14,11 +14,10 @@ interface Photo {
 
 interface PhotoGalleryProps {
   photos: Photo[];
-  onPhotoClick?: (photo: Photo) => void;
   onTransactionClick?: (photo: Photo) => void;
 }
 
-type ImageState = 'loading' | 'loaded' | 'error';
+type ImageState = 'error';
 
 interface ImageStatus {
   state: ImageState;
@@ -32,27 +31,11 @@ interface LightboxState {
 }
 
 export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) => {
-  const [imageStatuses, setImageStatuses] = useState<Record<string, ImageStatus>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, ImageStatus>>({});
   const [lightbox, setLightbox] = useState<LightboxState>({ isOpen: false, photo: null });
   const [isSharing, setIsSharing] = useState(false);
   const [isLightboxImageLoading, setIsLightboxImageLoading] = useState(false);
 
-  // Initialize image statuses for new photos
-  useEffect(() => {
-    photos.forEach((photo) => {
-      if (!imageStatuses[photo.id]) {
-        // Convert old gateway URLs to uploader URLs for better reliability
-        const convertedUrl = photo.url.replace('gateway.irys.xyz', 'uploader.irys.xyz');
-        console.log(`Setting up image for photo ${photo.id}:`, { original: photo.url, converted: convertedUrl });
-        
-        // Set loading state immediately
-        setImageStatuses(prev => ({
-          ...prev,
-          [photo.id]: { state: 'loading', retryCount: 0 }
-        }));
-      }
-    });
-  }, [photos, imageStatuses]);
 
   // Handle escape key to close lightbox
   useEffect(() => {
@@ -70,8 +53,7 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
 
   // Subscribe to share events to handle cancellation properly
   useEffect(() => {
-    const handleShareResponse = (payload: unknown) => {
-      console.log('Share Response:', payload);
+    const handleShareResponse = (_payload: unknown) => {
       setIsSharing(false);
     };
 
@@ -88,18 +70,18 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
 
   const handleImageError = (photoId: string) => {
     console.error(`Failed to load image for photo ${photoId}`);
-    setImageStatuses(prev => ({
+    setImageErrors(prev => ({
       ...prev,
       [photoId]: { state: 'error', retryCount: 0, errorMessage: 'Failed to load image' }
     }));
   };
 
   const handleImageLoad = (photoId: string) => {
-    console.log(`Successfully loaded image for photo ${photoId}`);
-    setImageStatuses(prev => ({
-      ...prev,
-      [photoId]: { state: 'loaded', retryCount: 0 }
-    }));
+    // Remove from errors if it loads successfully
+    setImageErrors(prev => {
+      const { [photoId]: _removed, ...rest } = prev;
+      return rest;
+    });
   };
 
   const openLightbox = (photo: Photo) => {
@@ -118,13 +100,19 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
 
   const handleLightboxImageError = () => {
     setIsLightboxImageLoading(false);
-    console.error('Failed to load lightbox image');
+    console.error('Failed to load lightbox image:', lightbox.photo?.url);
+    
+    // Show error state in lightbox
+    setLightbox(prev => ({
+      ...prev,
+      photo: prev.photo ? { ...prev.photo, url: 'error' } : null
+    }));
   };
 
   const sharePhoto = async (photo: Photo) => {
     setIsSharing(true);
     
-    const shareUrl = photo.url.replace('gateway.irys.xyz', 'uploader.irys.xyz');
+    const shareUrl = photo.url;
     
     // Use MiniKit share command for native sharing experience
     if (MiniKit && MiniKit.commandsAsync && MiniKit.commandsAsync.share) {
@@ -140,22 +128,18 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
           console.error('Failed to initiate share:', error);
           setIsSharing(false);
           
-          // Fallback to clipboard on error
-          navigator.clipboard.writeText(shareUrl).then(() => {
-            console.log('Fallback: Copied to clipboard:', shareUrl);
-          }).catch((clipboardError) => {
-            console.error('Failed to copy to clipboard:', clipboardError);
-          });
+                  // Fallback to clipboard on error
+        navigator.clipboard.writeText(shareUrl).catch((clipboardError) => {
+          console.error('Failed to copy to clipboard:', clipboardError);
+        });
         }
         // For AbortError/cancellation, we don't do anything - the event will handle it
       });
       
-      console.log('Share command sent via MiniKit:', shareUrl);
     } else {
       // Fallback to clipboard if MiniKit is not available
       try {
         await navigator.clipboard.writeText(shareUrl);
-        console.log('Copied to clipboard (MiniKit not available):', shareUrl);
       } catch (clipboardError) {
         console.error('Failed to copy to clipboard:', clipboardError);
       } finally {
@@ -166,46 +150,13 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
 
   const downloadPhoto = (photo: Photo) => {
     const link = document.createElement('a');
-    link.href = photo.url.replace('gateway.irys.xyz', 'uploader.irys.xyz');
+    link.href = photo.url;
     link.download = `photo-${photo.transactionId.slice(0, 8)}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const getImageStateContent = (photo: Photo) => {
-    const status = imageStatuses[photo.id];
-    const state = status?.state || 'loading';
-
-    switch (state) {
-      case 'loading':
-        return (
-          <div className="w-full h-40 bg-gray-100 rounded-xl flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <p className="text-xs text-gray-600 font-medium">Loading Image</p>
-              <p className="text-xs text-gray-400 mt-1">This may take a moment</p>
-            </div>
-          </div>
-        );
-
-      case 'error':
-        return (
-          <div className="w-full h-40 bg-red-50 rounded-xl flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 bg-red-400 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                <span className="text-white text-sm">⚠️</span>
-              </div>
-              <p className="text-xs text-red-600 font-medium">Failed to Load</p>
-              <p className="text-xs text-red-400 mt-1">Image unavailable</p>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   if (photos.length === 0) {
     return (
@@ -233,10 +184,7 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
         {/* Photo Grid */}
         <div className="grid grid-cols-2 gap-4">
           {photos.map((photo) => {
-            const status = imageStatuses[photo.id];
-            const state = status?.state || 'loading';
-            const isLoaded = state === 'loaded';
-            const convertedUrl = photo.url.replace('gateway.irys.xyz', 'uploader.irys.xyz');
+            const hasError = imageErrors[photo.id];
 
             return (
               <div
@@ -244,53 +192,35 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
                 className="relative group cursor-pointer bg-gray-50 rounded-xl overflow-hidden"
                 onClick={() => openLightbox(photo)}
               >
-                {/* Status indicator */}
-                <div className="absolute top-2 right-2 z-10">
-                  {state === 'loading' && (
-                    <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                      Loading
-                    </div>
-                  )}
-                  {state === 'error' && (
+                {/* Status indicator - only show for errors */}
+                {hasError && (
+                  <div className="absolute top-2 right-2 z-10">
                     <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                       Error
                     </div>
-                  )}
-                  {state === 'loaded' && (
-                    <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                      ✓
+                  </div>
+                )}
+                
+                {/* Image - simplified approach */}
+                <Image
+                  src={photo.url}
+                  alt="Uploaded photo"
+                  width={400}
+                  height={200}
+                  className="w-full h-40 object-cover"
+                  unoptimized
+                  onError={() => handleImageError(photo.id)}
+                  onLoad={() => handleImageLoad(photo.id)}
+                />
+                
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                      <div className="w-4 h-4 bg-black rounded"></div>
                     </div>
-                  )}
+                  </div>
                 </div>
-                
-                {/* Image or loading state */}
-                {isLoaded ? (
-                  <Image
-                    src={convertedUrl}
-                    alt="Uploaded photo"
-                    width={400}
-                    height={200}
-                    className="w-full h-40 object-cover"
-                    unoptimized
-                    onError={() => handleImageError(photo.id)}
-                    onLoad={() => handleImageLoad(photo.id)}
-                  />
-                ) : (
-                  <div className="h-40 flex items-center justify-center">
-                    {getImageStateContent(photo)}
-                  </div>
-                )}
-                
-                {/* Overlay on hover - only for loaded images */}
-                {isLoaded && (
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <div className="w-4 h-4 bg-black rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 
                 {/* Transaction ID badge - clickable to open explorer */}
                 <div 
@@ -316,9 +246,9 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
             {/* Close button */}
             <button
               onClick={closeLightbox}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center hover:bg-opacity-70 transition-colors"
+              className="absolute top-4 right-4 z-10 w-12 h-12 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center hover:bg-opacity-70 transition-colors"
             >
-              ×
+              <span className="text-2xl font-bold">×</span>
             </button>
             
             {/* Image */}
@@ -332,16 +262,33 @@ export const PhotoGallery = ({ photos, onTransactionClick }: PhotoGalleryProps) 
                   </div>
                 </div>
               )}
-              <Image
-                src={lightbox.photo.url.replace('gateway.irys.xyz', 'uploader.irys.xyz')}
-                alt="Full size photo"
-                width={800}
-                height={600}
-                className="max-w-full max-h-full object-contain"
-                unoptimized
-                onLoad={handleLightboxImageLoad}
-                onError={handleLightboxImageError}
-              />
+              
+              {lightbox.photo.url === 'error' ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-2xl">⚠️</span>
+                  </div>
+                  <p className="text-white text-lg font-medium mb-2">Failed to Load Image</p>
+                  <p className="text-white text-sm opacity-75 mb-4">The image could not be loaded from Irys</p>
+                  <button
+                    onClick={() => window.open(lightbox.photo?.url, '_blank')}
+                    className="bg-white text-black px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    Try Opening Directly
+                  </button>
+                </div>
+              ) : (
+                <Image
+                  src={lightbox.photo.url}
+                  alt="Full size photo"
+                  width={800}
+                  height={600}
+                  className="max-w-full max-h-full object-contain"
+                  unoptimized
+                  onLoad={handleLightboxImageLoad}
+                  onError={handleLightboxImageError}
+                />
+              )}
             </div>
             
             {/* Action buttons */}

@@ -20,7 +20,7 @@ export interface UserProfile {
 // KV API endpoints
 const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4';
 
-async function makeKVRequest(endpoint: string, method: string = 'GET', body?: any) {
+async function makeKVRequest(endpoint: string, method: string = 'GET', body?: unknown) {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const namespaceId = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
@@ -44,7 +44,17 @@ async function makeKVRequest(endpoint: string, method: string = 'GET', body?: an
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`KV request failed: ${response.status} ${errorText}`);
+    
+    // Handle specific error cases
+    if (response.status === 404) {
+      throw new Error(`key not found: ${errorText}`);
+    } else if (response.status === 401) {
+      throw new Error(`KV authentication failed: ${errorText}`);
+    } else if (response.status === 403) {
+      throw new Error(`KV access forbidden: ${errorText}`);
+    } else {
+      throw new Error(`KV request failed: ${response.status} ${errorText}`);
+    }
   }
 
   if (method === 'GET') {
@@ -65,6 +75,11 @@ export async function getUserPhotos(userAddress: string): Promise<UserProfile | 
 
     return JSON.parse(data) as UserProfile;
   } catch (error) {
+    // Handle "key not found" as a normal case for new users
+    if (error instanceof Error && error.message.includes('key not found')) {
+      console.log(`No existing photos found for user ${userAddress} - this is normal for new users`);
+      return null;
+    }
     console.error('Error fetching user photos:', error);
     return null;
   }

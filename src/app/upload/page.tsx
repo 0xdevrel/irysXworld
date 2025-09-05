@@ -37,15 +37,20 @@ export default function UploadPage() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.photos) {
-          setPhotos(data.photos);
-          console.log(`Loaded ${data.photos.length} photos for user ${userAddress}`);
+        if (data.success) {
+          setPhotos(data.photos || []);
+        } else {
+          console.error('Failed to load photos - invalid response format');
+          setPhotos([]);
         }
       } else {
-        console.error('Failed to load photos from KV storage');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to load photos from KV storage:', errorData);
+        setPhotos([]);
       }
     } catch (error) {
       console.error('Error loading photos:', error);
+      setPhotos([]);
     } finally {
       setIsLoadingPhotos(false);
     }
@@ -87,11 +92,7 @@ export default function UploadPage() {
     return "User";
   };
 
-  const handleUploadSuccess = (imageUrl: string, transactionId: string, explorerUrl: string) => {
-    console.log('Upload success - Image URL:', imageUrl);
-    console.log('Upload success - Transaction ID:', transactionId);
-    console.log('Upload success - Explorer URL:', explorerUrl);
-    
+  const handleUploadSuccess = (_imageUrl: string, _transactionId: string, _explorerUrl: string) => {
     // Reload photos from KV storage to get the latest data
     if (user?.address) {
       loadUserPhotos(user.address);
@@ -100,10 +101,6 @@ export default function UploadPage() {
     setShowUpload(false);
   };
 
-  const handlePhotoClick = (photo: Photo) => {
-    // Open photo in new tab
-    window.open(photo.url, '_blank');
-  };
 
   const handleTransactionClick = (photo: Photo) => {
     // Open transaction explorer in new tab
@@ -181,7 +178,6 @@ export default function UploadPage() {
               ) : (
                 <PhotoGallery 
                   photos={photos} 
-                  onPhotoClick={handlePhotoClick}
                   onTransactionClick={handleTransactionClick}
                 />
               )}
