@@ -16,11 +16,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Funding Irys account with SOL...');
     
-    // Initialize uploader for Solana devnet
+    // Initialize uploader for Solana mainnet with explicit network setting
     const uploader = await Uploader(Solana)
       .withWallet(privateKey)
-      .withRpc(process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com')
-      .devnet();
+      .network("mainnet");
     
     // Get current balance
     const currentBalance = await uploader.getBalance();

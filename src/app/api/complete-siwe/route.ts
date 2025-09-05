@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
         isValid: true,
         user: {
           address: payload.address,
-          username: payload.message.includes('username:') 
-            ? payload.message.split('username:')[1]?.split('\n')[0]?.trim()
-            : undefined
+          // Note: Username should be accessed from MiniKit.user after successful auth
+          // The SIWE message doesn't contain username in the standard format
+          username: undefined
         }
       });
     } else {

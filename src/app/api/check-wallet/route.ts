@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { Uploader } from "@irys/upload";
 import { Solana } from "@irys/upload-solana";
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import bs58 from "bs58";
 
 export async function GET() {
   try {
@@ -16,11 +14,10 @@ export async function GET() {
 
     console.log('Checking Solana wallet configuration...');
     
-    // Initialize uploader for Solana devnet
+    // Initialize uploader for Solana mainnet with explicit network setting
     const uploader = await Uploader(Solana)
       .withWallet(privateKey)
-      .withRpc(process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com')
-      .devnet();
+      .network("mainnet");
 
     // Get wallet address
     const address = uploader.address;
@@ -34,16 +31,8 @@ export async function GET() {
       console.log('Could not get Irys balance:', error);
     }
 
-    // Get SOL balance from Solana
-    let solBalance = "Unknown";
-    try {
-      const keypair = Keypair.fromSecretKey(bs58.decode(privateKey));
-      const connection = new Connection(process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com', 'confirmed');
-      const balance = await connection.getBalance(keypair.publicKey);
-      solBalance = (balance / LAMPORTS_PER_SOL).toString();
-    } catch (error) {
-      console.log('Could not get SOL balance:', error);
-    }
+    // Note: SOL balance check removed - not needed for Irys mainnet with .network("mainnet")
+    const solBalance = "N/A (using Irys mainnet)";
 
     console.log('Wallet check completed');
     
@@ -51,9 +40,8 @@ export async function GET() {
       success: true,
       wallet: {
         address,
-        network: "Solana Devnet",
-        rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
-        configuration: "Using Uploader(Solana).withWallet().withRpc().devnet()"
+        network: "Solana Mainnet",
+        configuration: "Using Uploader(Solana).withWallet().network('mainnet')"
       },
       balances: {
         irys: {
@@ -65,7 +53,7 @@ export async function GET() {
           unit: "SOL"
         }
       },
-      message: "Uploader initialized successfully for Solana devnet."
+      message: "Uploader initialized successfully for Solana mainnet."
     });
 
   } catch (error) {

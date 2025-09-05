@@ -31,17 +31,14 @@ NEXT_PUBLIC_WLD_VERIFICATION_LEVEL=Orb
 
 ### Irys Configuration (For Photo Upload)
 ```bash
-# Your wallet private key for Irys testnet (keep this secret!) - SERVER SIDE ONLY
-IRYS_PRIVATE_KEY=your_private_key_here
+# Your Solana wallet private key for Irys mainnet (keep this secret!) - SERVER SIDE ONLY
+SOLANA_PRIVATE_KEY=your_solana_private_key_here
 
 # Irys gateway for viewing uploaded content
-NEXT_PUBLIC_IRYS_GATEWAY=https://gateway.irys.xyz
+NEXT_PUBLIC_IRYS_GATEWAY=https://uploader.irys.xyz
 
-# Irys testnet network (devnet)
-IRYS_NETWORK=devnet
-
-# Note: The RPC URL is hardcoded to use Irys testnet: https://testnet-rpc.irys.xyz/v1/execution-rpc
-# No need to configure this as an environment variable
+# Note: Using Solana mainnet - you need real SOL to upload files
+# Get SOL from exchanges like Coinbase, Binance, or other crypto exchanges
 ```
 
 ## 🌍 World ID Setup
@@ -53,28 +50,28 @@ IRYS_NETWORK=devnet
 5. Copy your Action ID
 6. Add both to your `.env.local` file
 
-## 📱 Irys Testnet Setup
+## 📱 Irys Mainnet Setup
 
 1. Go to [Irys Documentation](https://docs.irys.xyz/)
-2. Set up an Irys testnet wallet at [wallet.irys.xyz](https://wallet.irys.xyz)
-3. Get your private key for the Irys testnet wallet
-4. **Get testnet IRYS tokens** - This is crucial for uploads to work
+2. Set up a Solana wallet (Phantom, Solflare, etc.)
+3. Get your private key for the Solana wallet
+4. **Get real SOL tokens** - This is crucial for uploads to work on mainnet
 5. Add the configuration to your `.env.local` file
 
 **Important**: 
-- The Irys private key is server-side only (no `NEXT_PUBLIC_` prefix) for security
-- We're using Irys testnet, not Ethereum Sepolia
-- The RPC URL is hardcoded to `https://testnet-rpc.irys.xyz/v1`
-- **You need IRYS tokens in your wallet for uploads to work**
+- The Solana private key is server-side only (no `NEXT_PUBLIC_` prefix) for security
+- We're using Solana mainnet, which requires real SOL tokens
+- You can buy SOL from exchanges like Coinbase, Binance, or Kraken
+- **You need SOL tokens in your wallet for uploads to work**
 
-### Getting IRYS Testnet Tokens
+### Getting SOL Tokens
 
-To get IRYS testnet tokens, you can:
-1. Use the Irys testnet faucet (if available)
-2. Check the [Irys Discord](https://discord.gg/irys) for testnet token distribution
-3. Contact the Irys team for testnet access
+To get SOL tokens, you can:
+1. Buy SOL from cryptocurrency exchanges like Coinbase, Binance, or Kraken
+2. Transfer SOL from another wallet
+3. Use a Solana faucet (for small amounts)
 
-**Note**: Without IRYS tokens in your wallet, photo uploads will fail with "402 error: Not enough balance for transaction".
+**Note**: Without SOL tokens in your wallet, photo uploads will fail with "402 error: Not enough balance for transaction".
 
 ## 📱 Testing the App
 
@@ -159,8 +156,8 @@ src/
    - Check your `NEXT_PUBLIC_WLD_ACTION_ID` environment variable
    - Verify it's set correctly
 
-3. **"Irys private key not configured"**
-   - Check your `IRYS_PRIVATE_KEY` environment variable
+3. **"Solana private key not configured"**
+   - Check your `SOLANA_PRIVATE_KEY` environment variable
    - Make sure it's server-side only (no `NEXT_PUBLIC_` prefix)
 
 4. **Verification fails**
@@ -169,17 +166,19 @@ src/
    - Verify your World ID app configuration
 
 5. **Photo upload fails**
-   - Check Irys configuration in environment variables
-   - **Ensure you have testnet IRYS tokens in your wallet** (most common issue)
+   - Check Solana configuration in environment variables
+   - Ensure you have sufficient SOL balance for uploads
+   - Verify your wallet has real SOL (not testnet tokens)
+   - **Ensure you have SOL tokens in your wallet** (most common issue)
    - Check server logs for detailed error messages
-   - If you see "402 error: Not enough balance", you need to fund your wallet with IRYS tokens
-   - If you see "funding failed", check your wallet has sufficient IRYS tokens for funding
+   - If you see "402 error: Not enough balance", you need to fund your wallet with SOL tokens
+   - If you see "funding failed", check your wallet has sufficient SOL tokens for funding
 
 6. **"Funding failed" or "Tx doesn't exist" errors**
-   - This indicates your wallet doesn't have enough IRYS tokens
-   - Get testnet IRYS tokens from the Irys team or Discord
+   - This indicates your wallet doesn't have enough SOL tokens
+   - Get SOL tokens from cryptocurrency exchanges
    - Ensure your private key is correct and corresponds to a funded wallet
-   - Check the Irys testnet explorer at [testnet-explorer.irys.xyz](https://testnet-explorer.irys.xyz)
+   - Check the Solana explorer at [explorer.solana.com](https://explorer.solana.com)
 
 ### Debug Mode
 

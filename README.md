@@ -1,12 +1,12 @@
 # Photobooth - Onchain Photo Storage
 
-A Next.js app that uploads photos to Irys using Solana devnet. Built with World ID verification and modern UI.
+A Next.js app that uploads photos to Irys using Solana mainnet. Built with World ID verification and modern UI.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- Solana wallet with devnet SOL
+- Solana wallet with mainnet SOL
 
 ### Installation
 
@@ -33,8 +33,7 @@ NEXT_PUBLIC_WLD_VERIFICATION_LEVEL=Orb
 
 # Solana Configuration (required)
 SOLANA_PRIVATE_KEY=your_solana_private_key_here
-SOLANA_RPC_URL=https://api.devnet.solana.com
-NEXT_PUBLIC_IRYS_GATEWAY=https://gateway.irys.xyz
+NEXT_PUBLIC_IRYS_GATEWAY=https://uploader.irys.xyz
 ```
 
 ### Get Solana Private Key
@@ -43,17 +42,19 @@ NEXT_PUBLIC_IRYS_GATEWAY=https://gateway.irys.xyz
 2. **Export private key**: Get base58 encoded private key
 3. **Add to .env.local**: `SOLANA_PRIVATE_KEY=your_key_here`
 
-### Get Devnet SOL
+### Get Mainnet SOL
 
-```bash
-# Start the app
-npm run dev
+**Important**: This app now uses Solana mainnet, which requires real SOL tokens.
 
-# Get SOL from faucet
-curl -X POST http://localhost:3001/api/faucet
-```
+1. **Buy SOL** from exchanges like:
+   - Coinbase
+   - Binance
+   - Kraken
+   - Or any other cryptocurrency exchange
 
-Or visit: `http://localhost:3001/api/faucet`
+2. **Transfer SOL** to your wallet address (shown in the app)
+
+3. **Fund Irys account** using the `/api/fund-account` endpoint
 
 ### Run the App
 
@@ -76,7 +77,7 @@ Visit `http://localhost:3001`
 |----------|--------|-------------|
 | `/api/upload` | POST | Upload photo to Irys |
 | `/api/check-wallet` | GET | Check wallet balance |
-| `/api/faucet` | POST | Get devnet SOL |
+| `/api/faucet` | POST | Disabled (mainnet requires real SOL) |
 | `/api/fund-account` | POST | Fund Irys account |
 
 ## 🛠️ Development

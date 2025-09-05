@@ -88,9 +88,43 @@ export const WalletAuthButton = ({ onAuthSuccess }: WalletAuthButtonProps) => {
       console.log('Verification result:', verifyResult);
 
       if (verifyResult.status === 'success' && verifyResult.isValid) {
-        // Get username from MiniKit if available
-        const username = MiniKit.user?.username || verifyResult.user?.username;
         const address = finalPayload.address;
+        let username = undefined;
+        
+        // Wait for MiniKit to be fully initialized after successful auth
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Try to get username using the recommended approach from World ID docs
+        try {
+          // Method 1: Direct access to MiniKit.user (as per docs)
+          if (MiniKit.user && MiniKit.user.username) {
+            username = MiniKit.user.username;
+            console.log('Username from MiniKit.user:', username);
+          }
+          
+          // Method 2: Use getUserByAddress helper function (as per docs)
+          if (!username && address) {
+            try {
+              const userData = await MiniKit.getUserByAddress(address);
+              if (userData && userData.username) {
+                username = userData.username;
+                console.log('Username from getUserByAddress:', username);
+              }
+            } catch (getUserError) {
+              console.log('getUserByAddress failed:', getUserError);
+            }
+          }
+          
+          // Method 3: Check if username is available in MiniKit object directly
+          // Note: MiniKit.username property may not be available in all versions
+          // if (!username && MiniKit.username) {
+          //   username = MiniKit.username;
+          //   console.log('Username from MiniKit.username:', username);
+          // }
+          
+        } catch (error) {
+          console.log('Could not access username from MiniKit:', error);
+        }
         
         console.log('Wallet auth successful:', { address, username });
         onAuthSuccess({ address, username });

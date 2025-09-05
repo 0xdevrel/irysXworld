@@ -15,6 +15,12 @@ export default function MiniKitProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeMiniKit = async () => {
       try {
+        // Check if we're in a browser environment
+        if (typeof window === 'undefined') {
+          setIsInitialized(true);
+          return;
+        }
+
         // Install MiniKit
         if (typeof MiniKit.install === "function") {
           MiniKit.install();
@@ -23,8 +29,13 @@ export default function MiniKitProvider({ children }: { children: ReactNode }) {
         // Make MiniKit available globally for debugging
         window.MiniKit = MiniKit;
 
-        // Wait for initialization
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for initialization with longer timeout
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Check if MiniKit is properly initialized
+        if (MiniKit.isInstalled && typeof MiniKit.isInstalled === 'function') {
+          console.log("MiniKit is installed:", MiniKit.isInstalled());
+        }
 
         setIsInitialized(true);
         console.log("MiniKit initialized successfully");

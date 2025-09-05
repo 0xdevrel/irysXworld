@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 
 interface PhotoUploadProps {
   onUploadSuccess: (imageUrl: string, transactionId: string, explorerUrl: string) => void;
@@ -74,7 +75,7 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       formData.append('file', selectedImage);
       formData.append('walletAddress', walletAddress || ''); // Add wallet address to FormData
 
-      setUploadProgress(25);
+      setUploadProgress(10);
 
       // Upload to our API route
       const response = await fetch('/api/upload', {
@@ -85,10 +86,7 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
         }
       });
 
-      setUploadProgress(75);
-      
-      // Add a small delay to show the processing state
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setUploadProgress(90);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -103,9 +101,6 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       console.log("Gateway URL:", result.gatewayUrl);
       console.log("Transaction ID:", result.transactionId);
       console.log("Explorer URL:", result.explorerUrl);
-      
-      // Add a small delay to show completion
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Call the success callback with new response structure
       onUploadSuccess(result.gatewayUrl, result.transactionId, result.explorerUrl);
@@ -152,39 +147,50 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
 
       {/* Upload Options */}
       {!selectedImage && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-center">Upload Photo</h3>
-          
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-6">
+          {/* Back Button */}
+          <div className="flex justify-start">
             <button
-              onClick={openGallery}
-              className="bg-gray-100 hover:bg-gray-200 text-black font-medium py-4 px-6 rounded-2xl transition-colors border border-gray-200 flex flex-col items-center space-y-2"
+              onClick={() => window.history.back()}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 bg-white rounded"></div>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </div>
-              <span className="text-sm">Gallery</span>
+              <span className="text-sm font-medium">Back</span>
             </button>
+          </div>
+          
+          <div className="text-center">
+            <h3 className="text-lg font-semibold mb-6">Upload Photo</h3>
             
-            <button
-              onClick={openCamera}
-              className="bg-gray-100 hover:bg-gray-200 text-black font-medium py-4 px-6 rounded-2xl transition-colors border border-gray-200 flex flex-col items-center space-y-2"
-            >
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 bg-white rounded-full"></div>
-              </div>
-              <span className="text-sm">Camera</span>
-            </button>
-          </div>
-          
-          <div className="text-center text-xs text-gray-400">
-            Max file size: 10MB • Supported: JPG, PNG, GIF
-          </div>
-          
-          {/* Helpful note about processing time */}
-          <div className="text-center text-xs text-gray-400 bg-blue-50 p-3 rounded-xl">
-            <p className="font-medium mb-1">📸 Photo Processing Info</p>
-            <p>After upload, photos may take 3-5 seconds to appear in your gallery as Irys processes them on their gateway.</p>
+            <div className="flex justify-center space-x-6">
+              <button
+                onClick={openGallery}
+                className="bg-gray-100 hover:bg-gray-200 text-black font-medium py-4 px-6 rounded-2xl transition-colors border border-gray-200 flex flex-col items-center space-y-2"
+              >
+                <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                  <div className="w-4 h-4 bg-white rounded"></div>
+                </div>
+                <span className="text-sm">Gallery</span>
+              </button>
+              
+              <button
+                onClick={openCamera}
+                className="bg-gray-100 hover:bg-gray-200 text-black font-medium py-4 px-6 rounded-2xl transition-colors border border-gray-200 flex flex-col items-center space-y-2"
+              >
+                <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                  <div className="w-4 h-4 bg-white rounded-full"></div>
+                </div>
+                <span className="text-sm">Camera</span>
+              </button>
+            </div>
+            
+            <div className="text-center text-xs text-gray-400 mt-4">
+              Max file size: 10MB • Supported: JPG, PNG, GIF
+            </div>
           </div>
         </div>
       )}
@@ -193,10 +199,13 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       {previewUrl && selectedImage && (
         <div className="space-y-4">
           <div className="relative">
-            <img
+            <Image
               src={previewUrl}
               alt="Preview"
+              width={400}
+              height={256}
               className="w-full h-64 object-cover rounded-2xl"
+              unoptimized
             />
             <button
               onClick={removeImage}
@@ -221,16 +230,16 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
               </div>
               <div className="text-center space-y-1">
                 <div className="text-sm text-gray-600">
-                  Uploading to Irys testnet... {uploadProgress}%
+                  Uploading to Irys... {uploadProgress}%
                 </div>
                 {uploadProgress < 50 && (
                   <div className="text-xs text-gray-400">
-                    Preparing file for blockchain storage...
+                    Uploading to Irys network...
                   </div>
                 )}
                 {uploadProgress >= 50 && uploadProgress < 100 && (
                   <div className="text-xs text-gray-400">
-                    Writing to Solana devnet...
+                    Processing on Solana mainnet...
                   </div>
                 )}
                 {uploadProgress === 100 && (
@@ -248,7 +257,7 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
             disabled={isUploading}
             className="w-full bg-black text-white font-semibold py-3 px-6 rounded-2xl hover:bg-gray-800 active:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform active:scale-95"
           >
-            {isUploading ? "Uploading..." : "Upload to Irys Testnet"}
+            {isUploading ? "Uploading..." : "Upload to Irys"}
           </button>
         </div>
       )}

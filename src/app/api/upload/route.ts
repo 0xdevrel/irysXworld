@@ -13,22 +13,23 @@ const getIrysUploader = async () => {
         throw new Error('SOLANA_PRIVATE_KEY environment variable is not set');
       }
 
-      console.log('Initializing Irys uploader for Solana devnet...');
+      console.log('Initializing Irys uploader for Solana mainnet...');
       
-      // Configure for Solana devnet as per working script
+      // Configure for Solana mainnet with explicit network setting
       uploaderInstance = await Uploader(Solana)
         .withWallet(privateKey)
-        .withRpc(process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com')
-        .devnet();
+        .network("mainnet");
         
       console.log(`Connected to Irys from ${uploaderInstance.address}`);
       console.log('Network:', uploaderInstance.api.url);
-      console.log('Irys uploader initialized successfully for Solana devnet');
+      console.log('Irys uploader initialized successfully for Solana mainnet');
     }
     
     return uploaderInstance;
   } catch (error) {
     console.error('Failed to initialize Irys uploader:', error);
+    // Reset the instance on error so it can be retried
+    uploaderInstance = null;
     throw error;
   }
 };
@@ -75,14 +76,15 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      console.log('Starting upload to Irys Solana devnet...');
+      console.log('Starting upload to Irys Solana mainnet...');
       
       const irysUploader = await getIrysUploader();
 
-      // Check balance before upload
-      try {
-        const balance = await irysUploader.getBalance();
-        const price = await irysUploader.getPrice(file.size);
+      // Check balance before upload (non-blocking, credits may be available)
+      Promise.all([
+        irysUploader.getBalance(),
+        irysUploader.getPrice(file.size)
+      ]).then(([balance, price]) => {
         const balanceFormatted = irysUploader.utils.fromAtomic(balance);
         const priceFormatted = irysUploader.utils.fromAtomic(price);
         
@@ -90,17 +92,13 @@ export async function POST(req: NextRequest) {
         console.log('Upload cost:', priceFormatted, 'SOL');
         
         if (balance.lt(price)) {
-          console.log('Insufficient balance for upload');
-          return NextResponse.json({
-            error: `Insufficient balance. Required: ${priceFormatted} SOL, Available: ${balanceFormatted} SOL`
-          }, {
-            status: 402,
-            headers: corsHeaders
-          });
+          console.log('Regular balance insufficient, but attempting upload (credits may be available)');
         }
-      } catch (balanceError) {
-        console.log('Could not check balance:', balanceError);
-      }
+      }).catch((balanceError) => {
+        console.log('Could not check balance, proceeding with upload attempt:', balanceError);
+      });
+      
+      // Don't await balance check - proceed with upload immediately
 
       // Convert file to buffer
       const arrayBuffer = await file.arrayBuffer();
@@ -122,12 +120,12 @@ export async function POST(req: NextRequest) {
         tags.push({ name: "Wallet-Address", value: walletAddress });
       }
 
-      console.log('Uploading file to Irys Solana devnet...');
+      console.log('Uploading file to Irys Solana mainnet...');
       const receipt = await irysUploader.upload(buffer, { tags });
       
       const transactionId = receipt.id;
-      const gatewayUrl = `https://gateway.irys.xyz/${transactionId}`;
-      const explorerUrl = `https://explorer.solana.com/tx/${transactionId}?cluster=devnet`;
+      const gatewayUrl = `https://uploader.irys.xyz/${transactionId}`;
+      const explorerUrl = `https://explorer.solana.com/tx/${transactionId}`;
       
       console.log('Upload successful!');
       console.log('Transaction ID:', transactionId);
@@ -153,7 +151,7 @@ export async function POST(req: NextRequest) {
       let errorMessage = "Upload failed";
       if (uploadError instanceof Error) {
         if (uploadError.message.includes("402")) {
-          errorMessage = "Insufficient SOL balance. Please fund your wallet with SOL from the devnet faucet.";
+          errorMessage = "Insufficient SOL balance. Please fund your wallet with SOL.";
         } else if (uploadError.message.includes("funding")) {
           errorMessage = "Funding failed. Please check your SOL balance.";
         } else {
