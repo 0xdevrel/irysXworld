@@ -23,6 +23,33 @@ export default function UploadPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+
+  // Load user photos from KV storage
+  const loadUserPhotos = async (userAddress: string) => {
+    setIsLoadingPhotos(true);
+    try {
+      const response = await fetch('/api/photos', {
+        headers: {
+          'x-user-address': userAddress
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.photos) {
+          setPhotos(data.photos);
+          console.log(`Loaded ${data.photos.length} photos for user ${userAddress}`);
+        }
+      } else {
+        console.error('Failed to load photos from KV storage');
+      }
+    } catch (error) {
+      console.error('Error loading photos:', error);
+    } finally {
+      setIsLoadingPhotos(false);
+    }
+  };
 
   // Get user data from localStorage or URL parameters
   useEffect(() => {
@@ -30,8 +57,14 @@ export default function UploadPage() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
         setIsLoading(false);
+        
+        // Load user's photos from KV storage
+        if (userData.address) {
+          loadUserPhotos(userData.address);
+        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         setIsLoading(false);
@@ -59,16 +92,11 @@ export default function UploadPage() {
     console.log('Upload success - Transaction ID:', transactionId);
     console.log('Upload success - Explorer URL:', explorerUrl);
     
-    const newPhoto: Photo = {
-      id: Date.now().toString(),
-      url: imageUrl,
-      transactionId,
-      explorerUrl,
-      timestamp: Date.now()
-    };
+    // Reload photos from KV storage to get the latest data
+    if (user?.address) {
+      loadUserPhotos(user.address);
+    }
     
-    console.log('Created new photo object:', newPhoto);
-    setPhotos(prev => [newPhoto, ...prev]);
     setShowUpload(false);
   };
 
@@ -140,11 +168,23 @@ export default function UploadPage() {
               </div>
               
               {/* Photo Gallery */}
-              <PhotoGallery 
-                photos={photos} 
-                onPhotoClick={handlePhotoClick}
-                onTransactionClick={handleTransactionClick}
-              />
+              {isLoadingPhotos ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 relative">
+                    <div className="absolute inset-0 bg-black rounded-full animate-pulse"></div>
+                    <div className="absolute inset-2 bg-white rounded-full"></div>
+                    <div className="absolute inset-4 bg-black rounded-full animate-ping"></div>
+                  </div>
+                  <div className="text-black text-lg font-medium">Loading Photos</div>
+                  <div className="text-gray-500 text-sm mt-2">Fetching from storage...</div>
+                </div>
+              ) : (
+                <PhotoGallery 
+                  photos={photos} 
+                  onPhotoClick={handlePhotoClick}
+                  onTransactionClick={handleTransactionClick}
+                />
+              )}
             </div>
           )}
         </div>

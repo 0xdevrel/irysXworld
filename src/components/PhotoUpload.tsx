@@ -102,6 +102,39 @@ export const PhotoUpload = ({ onUploadSuccess, walletAddress }: PhotoUploadProps
       console.log("Transaction ID:", result.transactionId);
       console.log("Explorer URL:", result.explorerUrl);
       
+      // Save photo to KV storage
+      if (walletAddress) {
+        try {
+          const photoData = {
+            id: Date.now().toString(),
+            url: result.gatewayUrl,
+            transactionId: result.transactionId,
+            explorerUrl: result.explorerUrl,
+            timestamp: Date.now(),
+            filename: selectedImage.name,
+            size: selectedImage.size
+          };
+
+          const saveResponse = await fetch('/api/photos', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-address': walletAddress
+            },
+            body: JSON.stringify(photoData)
+          });
+
+          if (saveResponse.ok) {
+            console.log('Photo saved to KV storage successfully');
+          } else {
+            console.error('Failed to save photo to KV storage');
+          }
+        } catch (kvError) {
+          console.error('Error saving photo to KV:', kvError);
+          // Don't fail the upload if KV save fails
+        }
+      }
+      
       // Call the success callback with new response structure
       onUploadSuccess(result.gatewayUrl, result.transactionId, result.explorerUrl);
       
